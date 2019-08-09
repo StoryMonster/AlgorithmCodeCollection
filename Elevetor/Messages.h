@@ -36,6 +36,7 @@ class MessageElevatorArrived
 public:
 	unsigned int myElevatorId;
 	unsigned int myFloor;
+	Direction myDirection;
 };
 
 class MessageHumanStep

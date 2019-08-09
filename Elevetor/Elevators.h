@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <vector>
+#include <queue>
 #include "Elevator.h"
 #include "Messages.h"
 
@@ -18,4 +19,5 @@ public:
 
 private:
 	std::vector<Elevator> myElevators;
+	std::queue<MessageElevatorCall> unsolvedCalls{};
 };

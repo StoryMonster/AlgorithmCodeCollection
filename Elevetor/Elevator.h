@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <set>
 
 enum Direction;
 
@@ -20,6 +21,9 @@ public:
 	unsigned int CurrentFloor() const;
 	Direction CurrentDirection() const;
 	bool HasWork() const;
+	bool WillStopAtCurrentFloor() const;
+	void StopAtCurrentFloor() const;
+	bool CanResponseElevatorCall(const MessageElevatorCall&) const;
 
 	void Step();
 	unsigned int Id() const;
@@ -31,4 +35,5 @@ private:
 	unsigned int myFloorCount;
 	unsigned int myCurrentFloor;
 	Direction myCurrentDirection;
+	std::set<unsigned int> floorsNeedStop{};
 };

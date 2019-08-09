@@ -30,10 +30,13 @@ public:
 	unsigned int GetWaitingCounter() const;
 	unsigned int GetTravelingCounter() const;
 
+	void OnElevatorArrived(const MessageElevatorArrived&);
+
 private:
 	HumanState myState;
 	unsigned int myWaitingCounter;
 	unsigned int myTravelingCounter;
+	unsigned int myElevatorId;
 };
 
 class Humans
