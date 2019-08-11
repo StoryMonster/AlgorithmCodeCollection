@@ -1,6 +1,6 @@
 #include "MessageBus.h"
-
 #include "Elevators.h"
+#include "Utils.h"
 
 
 namespace
@@ -14,15 +14,15 @@ unsigned int abs(unsigned int a, unsigned int b)
 
 Elevators::Elevators()
 {
+	REGISTER_ELEVATOR(MessageElevatorCall, Elevators::OnMessageElevatorCall);
+	REGISTER_ELEVATOR(MessageElevatorStep, Elevators::OnMessageElevatorStep);
+	REGISTER_ELEVATOR(MessageElevatorRequest, Elevators::OnMessageElevatorRequest);
 }
 
 void Elevators::Start()
 {
-	REGISTER_ELEVATOR(MessageElevatorCall, Elevators::OnMessageElevatorCall);
-	REGISTER_ELEVATOR(MessageElevatorStep, Elevators::OnMessageElevatorStep);
-	REGISTER_ELEVATOR(MessageElevatorRequest, Elevators::OnMessageElevatorRequest);
-
-	myElevators.push_back(Elevator{1, 10, 6, Direction::Down});
+	//myElevators.push_back(Elevator{1, 10, 6, Direction::Down});
+	myElevators.push_back(Elevator{1, 10, 3, Direction::Down});
 
 	{
 		MessageElevatorStep message;
@@ -38,7 +38,7 @@ void Elevators::Start()
 void Elevators::OnMessageElevatorCall(const MessageElevatorCall& aMessage)
 {
 	// Implement me!
-	unsigned int minDistance = 0x7fffffffffffffff;
+	unsigned int minDistance = 0x7fffffff;
 	auto elevator = myElevators.end();
 	for (auto it = myElevators.begin(); it != myElevators.end(); ++it)
 	{
@@ -67,11 +67,14 @@ void Elevators::OnMessageElevatorCall(const MessageElevatorCall& aMessage)
 void Elevators::OnMessageElevatorRequest(const MessageElevatorRequest& aMessage)
 {
 	// Implement me!
+	Log("received elevator request");
 	for (auto& elevator : myElevators)
 	{
-		if (elevator.Id() != aMessage.myElevatorId) { continue; }
-		elevator.SelectFloor(aMessage.myFloor);
-		break;
+		if (elevator.Id() == aMessage.myElevatorId)
+		{
+			elevator.SelectFloor(aMessage.myFloor);
+		    break;
+		}
 	}
 }
 
@@ -82,6 +85,7 @@ void  Elevators::OnMessageElevatorStep(const MessageElevatorStep& aMessage)
 	for (auto& elevator : myElevators)
 	{
 		elevator.Step();
+		Log("elevator at floor .. ", elevator.CurrentFloor());
 		if (elevator.WillStopAtCurrentFloor())
 		{
 			elevator.StopAtCurrentFloor();
@@ -90,7 +94,7 @@ void  Elevators::OnMessageElevatorStep(const MessageElevatorStep& aMessage)
 		}
 	}
 
-	for (int i = 0; i < unsolvedCalls.size(); ++i)
+	for (unsigned int i = 0; i < unsolvedCalls.size(); ++i)
 	{
 		const auto call = unsolvedCalls.front();
 		unsolvedCalls.pop();

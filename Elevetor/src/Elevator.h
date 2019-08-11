@@ -1,14 +1,7 @@
 #pragma once
 
 #include "Messages.h"
-#include "Utils.h"
-#include <cassert>
-#include <iostream>
-#include <map>
-#include <string>
 #include <set>
-
-enum Direction;
 
 class Elevator
 {
@@ -22,7 +15,7 @@ public:
 	Direction CurrentDirection() const;
 	bool HasWork() const;
 	bool WillStopAtCurrentFloor() const;
-	void StopAtCurrentFloor() const;
+	void StopAtCurrentFloor();
 	bool CanResponseElevatorCall(const MessageElevatorCall&) const;
 
 	void Step();
@@ -35,5 +28,6 @@ private:
 	unsigned int myFloorCount;
 	unsigned int myCurrentFloor;
 	Direction myCurrentDirection;
-	std::set<unsigned int> floorsNeedStop{};
+	std::set<unsigned int> requestFloors{};
+	std::set<>
 };

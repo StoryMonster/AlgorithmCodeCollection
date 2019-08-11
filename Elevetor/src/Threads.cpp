@@ -1,5 +1,4 @@
 #include <chrono>
-
 #include "Threads.h"
 
 // Shrink this number to make the system go faster.

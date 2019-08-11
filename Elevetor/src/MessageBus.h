@@ -1,10 +1,8 @@
 #pragma once
 
 #include <functional>
-#include <thread>
 #include <vector>
 #include "Threads.h"
-#include "Utils.h"
 
 class MessageBus
 {

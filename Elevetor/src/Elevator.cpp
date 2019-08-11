@@ -1,7 +1,6 @@
 #include "Elevator.h"
-#include "MessageBus.h"
-
-#include "Elevators.h"
+#include <cassert>
+#include "Utils.h"
 
 Elevator::Elevator(const unsigned int aId, const unsigned int aFloorCount)
 	: myId(aId)
@@ -36,7 +35,6 @@ Elevator::Elevator(
 void Elevator::SelectFloor(const unsigned int aFloorId)
 {
 	// Implement me!
-	if (aFloorId == myCurrentFloor) { return ;}
 	if (!HasWork())
 	{
 		myCurrentDirection = (aFloorId > myCurrentFloor) ? Direction::Up : Direction::Down;
@@ -58,27 +56,29 @@ bool Elevator::HasWork() const
 {
 	// Implement me!
 	return !floorsNeedStop.empty();
-	//return false;
 }
 
 void Elevator::Step()
 {
 	// Implement me!
+	if (!HasWork()) { return; }
 	if (myCurrentDirection == Direction::Down)
 	{
-		--myCurrentFloor;
-		if (myCurrentFloor == 1)
+		if (std::find_if(floorsNeedStop.cbegin(), floorsNeedStop.cend(), [this](const auto floorId){ return floorId < this->myCurrentFloor;}) == floorsNeedStop.cend())
 		{
 			myCurrentDirection = Direction::Up;
+			return;
 		}
+		--myCurrentFloor;
 	}
 	else
 	{
-		++myCurrentFloor;
-		if (myCurrentFloor == myFloorCount)
+		if (std::find_if(floorsNeedStop.cbegin(), floorsNeedStop.cend(), [this](const auto floorId){ return floorId > this->myCurrentFloor;}) == floorsNeedStop.cend())
 		{
 			myCurrentDirection = Direction::Down;
+			return;
 		}
+		++myCurrentFloor;
 	}
 }
 
@@ -87,8 +87,22 @@ bool Elevator::WillStopAtCurrentFloor() const
     return floorsNeedStop.find(myCurrentFloor) != floorsNeedStop.cend();
 }
 
-void Elevator::StopAtCurrentFloor() const
+void Elevator::StopAtCurrentFloor()
 {
+	if (myCurrentDirection == Direction::Down)
+	{
+		if (std::find_if(floorsNeedStop.cbegin(), floorsNeedStop.cend(), [this](const auto floorId){ return floorId < this->myCurrentFloor;}) == floorsNeedStop.cend())
+		{
+			myCurrentDirection = Direction::Up;
+		}
+	}
+	else
+	{
+		if (std::find_if(floorsNeedStop.cbegin(), floorsNeedStop.cend(), [this](const auto floorId){ return floorId > this->myCurrentFloor;}) == floorsNeedStop.cend())
+		{
+			myCurrentDirection = Direction::Down;
+		}
+	}
     floorsNeedStop.erase(myCurrentFloor);
 }
 
