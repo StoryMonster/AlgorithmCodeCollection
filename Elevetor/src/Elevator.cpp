@@ -22,24 +22,21 @@ Elevator::Elevator(
 	, myCurrentDirection(aDirection)
 {
 	Log("[Elevator]", myId, "Created", ToString());
-	if (aCurrentFloor == aFloorCount)
-	{
-		assert(aDirection == Direction::Down);
-	}
-	if (aCurrentFloor == 1)
-	{
-		assert(aDirection == Direction::Up);
-	}
 }
 
 void Elevator::SelectFloor(const unsigned int aFloorId)
 {
 	// Implement me!
+    requestFloors.emplace(aFloorId);
+}
+
+void Elevator::RespondToCall(const MessageElevatorCall& msg)
+{
 	if (!HasWork())
 	{
-		myCurrentDirection = (aFloorId > myCurrentFloor) ? Direction::Up : Direction::Down;
+		myCurrentDirection = msg.myFloor > myCurrentFloor ? Direction::Up : Direction::Down;
 	}
-    floorsNeedStop.emplace(aFloorId);
+    calls.emplace(msg);
 }
 
 unsigned int Elevator::CurrentFloor() const
@@ -55,55 +52,69 @@ Direction Elevator::CurrentDirection() const
 bool Elevator::HasWork() const
 {
 	// Implement me!
-	return !floorsNeedStop.empty();
+	return !calls.empty() || !requestFloors.empty();
 }
 
 void Elevator::Step()
 {
 	// Implement me!
 	if (!HasWork()) { return; }
+	Log(ToString());
 	if (myCurrentDirection == Direction::Down)
 	{
-		if (std::find_if(floorsNeedStop.cbegin(), floorsNeedStop.cend(), [this](const auto floorId){ return floorId < this->myCurrentFloor;}) == floorsNeedStop.cend())
-		{
-			myCurrentDirection = Direction::Up;
-			return;
-		}
 		--myCurrentFloor;
+		return;
+	}
+	++myCurrentFloor;
+}
+
+bool Elevator::IsStoppableCallingFloor() const
+{
+	if (calls.empty()) { return false; }
+	const auto call = calls.cbegin();
+	if (calls.size() == 1) { return call->myFloor == myCurrentFloor; }
+	unsigned int minCallFloor = 0x7fffffff;
+	unsigned int maxCallFloor = 0;
+	for (auto it = calls.cbegin(); it != calls.cend(); ++it)
+	{
+        if (it->myFloor < minCallFloor) { minCallFloor = it->myFloor; }
+		if (it->myFloor > maxCallFloor) { maxCallFloor = it->myFloor; }
+	}
+	if (myCurrentFloor != minCallFloor && myCurrentFloor != maxCallFloor) { return false; }
+	if (myCurrentFloor == minCallFloor && myCurrentFloor == maxCallFloor) { return true; }
+	if (myCurrentFloor == maxCallFloor)
+	{
+        return (call->myDirection == myCurrentDirection && myCurrentDirection == Direction::Down) ||
+		       (call->myDirection != myCurrentDirection && myCurrentDirection == Direction::Up);
 	}
 	else
 	{
-		if (std::find_if(floorsNeedStop.cbegin(), floorsNeedStop.cend(), [this](const auto floorId){ return floorId > this->myCurrentFloor;}) == floorsNeedStop.cend())
-		{
-			myCurrentDirection = Direction::Down;
-			return;
-		}
-		++myCurrentFloor;
+		return (call->myDirection == myCurrentDirection && myCurrentDirection == Direction::Up) ||
+		       (call->myDirection != myCurrentDirection && myCurrentDirection == Direction::Down);
 	}
 }
 
-bool Elevator::WillStopAtCurrentFloor() const
+bool Elevator::IsRequestFloor() const
 {
-    return floorsNeedStop.find(myCurrentFloor) != floorsNeedStop.cend();
+	return requestFloors.find(myCurrentFloor) != requestFloors.cend();
 }
 
-void Elevator::StopAtCurrentFloor()
+void Elevator::HandleArrivedAtRequestFloor()
 {
-	if (myCurrentDirection == Direction::Down)
+	if (IsRequestFloor())
 	{
-		if (std::find_if(floorsNeedStop.cbegin(), floorsNeedStop.cend(), [this](const auto floorId){ return floorId < this->myCurrentFloor;}) == floorsNeedStop.cend())
-		{
-			myCurrentDirection = Direction::Up;
-		}
+        requestFloors.erase(myCurrentFloor);
 	}
-	else
+}
+
+void Elevator::HandleArrivedAtCallingFloor()
+{
+    const auto it = std::find_if(calls.cbegin(), calls.cend(), [this](const auto& msg){ return msg.myFloor == this->myCurrentFloor; });
+	if (it != calls.cend())
 	{
-		if (std::find_if(floorsNeedStop.cbegin(), floorsNeedStop.cend(), [this](const auto floorId){ return floorId > this->myCurrentFloor;}) == floorsNeedStop.cend())
-		{
-			myCurrentDirection = Direction::Down;
-		}
+		myCurrentDirection = it->myDirection;
+        calls.erase(it);
 	}
-    floorsNeedStop.erase(myCurrentFloor);
 }
 
 unsigned int Elevator::Id() const
@@ -113,27 +124,29 @@ unsigned int Elevator::Id() const
 
 std::string Elevator::ToString() const
 {
-	return "- State: " 
+	return "[Elevator" + std::to_string(myId)
+	    + "]- State: "
 		+ std::to_string(myCurrentFloor) 
 		+ "/" 
 		+ std::to_string(myFloorCount) 
-		+ " " 
+		+ " "
 		+ ::ToString(myCurrentDirection);
 }
 
-bool Elevator::CanResponseElevatorCall(const MessageElevatorCall& msg) const
+bool Elevator::CanRespondToCall(const MessageElevatorCall& msg) const
 {
     if (!HasWork())
 	{
 		return true;
 	}
-	if (msg.myDirection == myCurrentDirection)
+	const auto it = calls.cbegin();
+	if (it != calls.cend())
 	{
-		switch (msg.myDirection)
-		{
-			case Direction::Up: return msg.myFloor >= myCurrentFloor;
-			case Direction::Down: return msg.myFloor <= myCurrentFloor;
-		}
+		if (msg.myDirection != it->myDirection) { return false; }
 	}
-	return false;
+	else
+	{
+		if (myCurrentDirection != msg.myDirection) { return false; }
+	}
+	return myCurrentDirection == Direction::Up ?  (msg.myFloor >= myCurrentFloor) : (msg.myFloor <= myCurrentFloor);
 }

@@ -2,16 +2,6 @@
 #include "Elevators.h"
 #include "Utils.h"
 
-
-namespace
-{
-
-unsigned int abs(unsigned int a, unsigned int b)
-{
-	return a > b ? a - b : b - a;
-}
-}
-
 Elevators::Elevators()
 {
 	REGISTER_ELEVATOR(MessageElevatorCall, Elevators::OnMessageElevatorCall);
@@ -21,8 +11,8 @@ Elevators::Elevators()
 
 void Elevators::Start()
 {
-	//myElevators.push_back(Elevator{1, 10, 6, Direction::Down});
-	myElevators.push_back(Elevator{1, 10, 3, Direction::Down});
+	myElevators.push_back(Elevator{1, 10, 4, Direction::Down});
+	myElevators.push_back(Elevator{2, 10, 5, Direction::Down});
 
 	{
 		MessageElevatorStep message;
@@ -40,9 +30,10 @@ void Elevators::OnMessageElevatorCall(const MessageElevatorCall& aMessage)
 	// Implement me!
 	unsigned int minDistance = 0x7fffffff;
 	auto elevator = myElevators.end();
+	auto abs = [](unsigned int a, unsigned int b) { return a > b ? a - b : b - a; };
 	for (auto it = myElevators.begin(); it != myElevators.end(); ++it)
 	{
-		if (it->CanResponseElevatorCall(aMessage))
+		if (it->CanRespondToCall(aMessage))
 		{
 			unsigned int distance = abs(aMessage.myFloor, it->CurrentFloor());
 			if (minDistance > distance)
@@ -58,7 +49,7 @@ void Elevators::OnMessageElevatorCall(const MessageElevatorCall& aMessage)
 	}
 	else
 	{
-		elevator->SelectFloor(aMessage.myFloor);
+		elevator->RespondToCall(aMessage);
 	}
 }
 
@@ -67,11 +58,11 @@ void Elevators::OnMessageElevatorCall(const MessageElevatorCall& aMessage)
 void Elevators::OnMessageElevatorRequest(const MessageElevatorRequest& aMessage)
 {
 	// Implement me!
-	Log("received elevator request");
 	for (auto& elevator : myElevators)
 	{
 		if (elevator.Id() == aMessage.myElevatorId)
 		{
+			Log("Received request to ");
 			elevator.SelectFloor(aMessage.myFloor);
 		    break;
 		}
@@ -84,14 +75,19 @@ void  Elevators::OnMessageElevatorStep(const MessageElevatorStep& aMessage)
 
 	for (auto& elevator : myElevators)
 	{
-		elevator.Step();
-		Log("elevator at floor .. ", elevator.CurrentFloor());
-		if (elevator.WillStopAtCurrentFloor())
+		if (elevator.IsStoppableCallingFloor())
 		{
-			elevator.StopAtCurrentFloor();
-			MessageElevatorArrived msg{elevator.Id(), elevator.CurrentFloor(), elevator.CurrentDirection()};
+			elevator.HandleArrivedAtCallingFloor();
+			MessageElevatorArrived msg{elevator.Id(), elevator.CurrentFloor(), elevator.CurrentDirection(), ElevatorArriveType::ArrivedCallingFloor};
 			SEND_TO_HUMANS(msg);
 		}
+		if (elevator.IsRequestFloor())
+		{
+			elevator.HandleArrivedAtRequestFloor();
+			MessageElevatorArrived msg{elevator.Id(), elevator.CurrentFloor(), elevator.CurrentDirection(), ElevatorArriveType::ArrivedRequestFloor};
+			SEND_TO_HUMANS(msg);
+		}
+		elevator.Step();
 	}
 
 	for (unsigned int i = 0; i < unsolvedCalls.size(); ++i)

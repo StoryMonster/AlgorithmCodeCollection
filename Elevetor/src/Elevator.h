@@ -14,9 +14,14 @@ public:
 	unsigned int CurrentFloor() const;
 	Direction CurrentDirection() const;
 	bool HasWork() const;
-	bool WillStopAtCurrentFloor() const;
-	void StopAtCurrentFloor();
-	bool CanResponseElevatorCall(const MessageElevatorCall&) const;
+
+	bool CanRespondToCall(const MessageElevatorCall&) const;
+	void RespondToCall(const MessageElevatorCall&);
+
+	bool IsStoppableCallingFloor() const;
+	bool IsRequestFloor() const;
+	void HandleArrivedAtRequestFloor();
+	void HandleArrivedAtCallingFloor();
 
 	void Step();
 	unsigned int Id() const;
@@ -29,5 +34,5 @@ private:
 	unsigned int myCurrentFloor;
 	Direction myCurrentDirection;
 	std::set<unsigned int> requestFloors{};
-	std::set<>
+	std::set<MessageElevatorCall> calls{};
 };

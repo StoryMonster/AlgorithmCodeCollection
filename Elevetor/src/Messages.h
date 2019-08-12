@@ -1,11 +1,18 @@
 #pragma once
 
 #include <string>
+#include <tuple>
 
 enum Direction
 {
 	Up = 0,
 	Down
+};
+
+enum ElevatorArriveType
+{
+	ArrivedCallingFloor = 0,
+	ArrivedRequestFloor
 };
 
 class MessageElevatorReady
@@ -21,6 +28,11 @@ class MessageElevatorCall
 public:
 	unsigned int myFloor;
 	Direction myDirection;
+
+	bool operator<(const MessageElevatorCall& msg) const
+	{
+		return std::tie(myFloor, myDirection) < std::tie(msg.myFloor, msg.myDirection);
+	}
 };
 
 class MessageElevatorRequest
@@ -36,6 +48,7 @@ public:
 	unsigned int myElevatorId;
 	unsigned int myFloor;
 	Direction myDirection;
+	ElevatorArriveType myType;
 };
 
 class MessageHumanStep

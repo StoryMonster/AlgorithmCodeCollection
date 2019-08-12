@@ -18,7 +18,6 @@ Human::Human(
 		Log("[Human][Error] Same floor and destination floor: ", myFloor);
 		assert(false);
 	}
-	Log("[Human] create ", myFloor, "-->", myDestinationFloor);
 }
 
 HumanState Human::GetState() const
@@ -65,18 +64,21 @@ unsigned int Human::GetTravelingCounter() const
 
 void Human::OnElevatorArrived(const MessageElevatorArrived& msg)
 {
-    if (myState == HumanState_Traveling && myElevatorId == msg.myElevatorId && myDestinationFloor == msg.myFloor)
-	{
-		SetStateArrived();
-	}
-	else if (myState == HumanState_Waiting && msg.myFloor == myFloor)
+	if (msg.myType == ElevatorArriveType::ArrivedCallingFloor && myState == HumanState_Waiting && myFloor == msg.myFloor)
 	{
 		const auto myDirection = myDestinationFloor > myFloor ? Direction::Up : Direction::Down;
 		if (myDirection == msg.myDirection)
 		{
-            myElevatorId = msg.myElevatorId;
+			myElevatorId = msg.myElevatorId;
 		    SetStateTraveling();
 		}
+	}
+	else if (msg.myType == ElevatorArriveType::ArrivedRequestFloor &&
+	         myState == HumanState_Traveling &&
+			 myDestinationFloor == msg.myFloor &&
+			 myElevatorId == msg.myElevatorId)
+	{
+        SetStateArrived();
 	}
 }
 
@@ -91,8 +93,8 @@ Humans::Humans()
 
 void Humans::Start()
 {
-	//myHumans.push_back(Human(1, 4));
-	myHumans.push_back(Human(3, 10));
+	myHumans.push_back(Human(1, 4));
+	myHumans.push_back(Human(2, 8));
 }
 
 void Humans::OnMessageElevatorReady(const MessageElevatorReady& aMessage)
@@ -113,13 +115,8 @@ void Humans::OnMessageElevatorArrived(const MessageElevatorArrived&	aMessage)
 		const auto prevState = human.GetState();
 		human.OnElevatorArrived(aMessage);
 		const auto nextState = human.GetState();
-		if (prevState == HumanState_Traveling && nextState == HumanState_Arrived)
+		if (prevState == HumanState_Waiting && nextState == HumanState_Traveling)
 		{
-			Log("[Humans] Human arrived destination, and leave the elevator");
-		}
-		else if (prevState == HumanState_Waiting && nextState == HumanState_Traveling)
-		{
-			Log("[Humans] Human enter the elevator", aMessage.myElevatorId);
 			MessageElevatorRequest msg{aMessage.myElevatorId, human.myDestinationFloor};
 			SEND_TO_ELEVATORS(msg);
 		}
@@ -129,24 +126,20 @@ void Humans::OnMessageElevatorArrived(const MessageElevatorArrived&	aMessage)
 void Humans::OnMessageHumanStep(const MessageHumanStep& aMessage)
 {	
 	Log("[Humans] Step");
-
-	for (auto& human : myHumans)
-	{
-		human.Step();
-	}
-	PrivPrintTimers();
 	// Implement me!
 
     for (auto& human : myHumans)
 	{
+		human.Step();
 		if (human.GetState() == HumanState::HumanState_Idle)
 		{
-			const auto humanDirection = human.myFloor < human.myDestinationFloor ? Direction::Up : Direction::Down;
+			const auto humanDirection = human.myDestinationFloor > human.myFloor ? Direction::Up : Direction::Down;
 			MessageElevatorCall msg{human.myFloor, humanDirection};
 			SEND_TO_ELEVATORS(msg);
 		    human.SetStateWaiting();
 		}
 	}
+	PrivPrintTimers();
 
 	MessageHumanStep message;
 	SEND_TO_HUMANS(message);
