@@ -63,9 +63,21 @@ void Elevator::Step()
 	if (myCurrentDirection == Direction::Down)
 	{
 		--myCurrentFloor;
-		return;
+		if (myCurrentFloor < 1)
+		{
+			myCurrentDirection = Direction::Up;
+            myCurrentFloor = 1;
+		}
 	}
-	++myCurrentFloor;
+	else
+	{
+		++myCurrentFloor;
+		if (myCurrentFloor > myFloorCount)
+		{
+			myCurrentDirection = Direction::Down;
+			myCurrentFloor = myFloorCount;
+		}
+	}
 }
 
 bool Elevator::IsStoppableCallingFloor() const

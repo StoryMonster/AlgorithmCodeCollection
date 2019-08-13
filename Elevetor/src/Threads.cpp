@@ -1,5 +1,6 @@
 #include <chrono>
 #include "Threads.h"
+#include <ctime>
 
 // Shrink this number to make the system go faster.
 static const unsigned int locThreadWaitTimeMs = 1000;
@@ -64,7 +65,6 @@ void Threads::AddElevatorWork(std::function<void()> aWork)
 		std::unique_lock<std::mutex> lock(myElevatorsMutex);
 		myElevatorsWork.emplace_back(aWork);
 	}
-
 	myElevatorsCv.notify_all();
 }
 

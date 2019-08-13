@@ -11,8 +11,7 @@ Elevators::Elevators()
 
 void Elevators::Start()
 {
-	myElevators.push_back(Elevator{1, 10, 4, Direction::Down});
-	myElevators.push_back(Elevator{2, 10, 5, Direction::Down});
+	myElevators.push_back(Elevator{1, 10, 6, Direction::Down});
 
 	{
 		MessageElevatorStep message;
@@ -62,7 +61,6 @@ void Elevators::OnMessageElevatorRequest(const MessageElevatorRequest& aMessage)
 	{
 		if (elevator.Id() == aMessage.myElevatorId)
 		{
-			Log("Received request to ");
 			elevator.SelectFloor(aMessage.myFloor);
 		    break;
 		}
